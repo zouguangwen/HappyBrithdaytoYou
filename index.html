@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flower Assembly with Fireworks</title>
+    <style>
+        body {
+            height: 1200px; /* For scrolling effect */
+            margin: 0;
+            font-family: Arial, sans-serif;
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+        }
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('bg.png') no-repeat center center fixed; /* Replace with your background image */
+            background-size: cover; /* Cover the entire background */
+            z-index: -1;
+        }
+        .background text {
+            position: relative;
+            top: 0;
+            left: 0;
+            background: url('1234.png');
+            width: 30px;
+            height: 300px;
+            z-index: 0;
+        }
+        .flower-container {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            height: 600px;
+            perspective: 1000px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .flower-container img {
+            bottom: 30px;
+            max-width: 30%; /* 最大宽度为30%，自动调整高度 */
+            height: auto; /* 高度按图片比例自适应 */
+            position: absolute; /* 使用绝对定位来支持重叠或动画效果 */
+            transition: transform 1s, opacity 1s; /* 设置过渡效果 */
+            opacity: 0; /* 初始状态透明 */
+            transform: scale(0) translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg); /* 初始状态散开且缩小 */
+        }
+        .stem{
+            bottom: 30px;
+        }
+
+        #text01 {
+            margin-top: -50px;
+            margin-bottom: 100px;
+            position: relative;
+            width: 76%; /* 设置图片宽度为 76% */
+            margin-left: 12%; /* 左右各留12%的空白 */
+            margin-right: 12%;
+        }
+        #text02 {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            position: relative;
+            width: auto; /* 设置图片宽度为 76% */
+            margin-left: 0; /* 左右各留12%的空白 */
+            margin-right: 0;
+        }
+        
+        canvas {
+            display: block; /* To remove the canvas margin */
+           /* background: url('bg.png') no-repeat center center;  设置canvas的背景图 */
+           background-color: rgba(red, green, blue, );
+            background-size: cover; /* 背景图覆盖整个canvas */
+            position: fixed; /* Fixed position for canvas */
+            top: 0;
+            left: 0;
+            z-index: 99; /* Ensure the canvas is behind other elements */
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="background"></div>
+    <div><img src="firework.png" id="text02" ></div>
+    <div><img src="1234.png" id="text01" ></div>
+    <div class="flower-container">
+        <img src="Flower9.png" alt="Stem Part 9" class="stem" data-index="9" style="transform: none;">
+        <img src="Flower8.png" alt="Flower Part 8" class="flower-part" data-index="8">
+        <img src="Flower7.png" alt="Flower Part 7" class="flower-part" data-index="7">
+        <img src="Flower6.png" alt="Flower Part 6" class="flower-part" data-index="6">
+        <img src="Flower5.png" alt="Flower Part 5" class="flower-part" data-index="5">
+        <img src="Flower4.png" alt="Flower Part 4" class="flower-part" data-index="4">
+        <img src="Flower3.png" alt="Flower Part 3" class="flower-part" data-index="3">
+        <img src="Flower2.png" alt="Flower Part 2" class="flower-part" data-index="2">
+        <img src="Flower1.png" alt="Flower Part 1" class="flower-part" data-index="1">
+        <img src="Flower0.png" alt="Flower Part 0" class="flower-part" data-index="0">
+    </div>
+
+    <script>
+        // 初始化变量
+        let canvas = document.getElementById('canvas'),
+            ctx = canvas.getContext('2d'),
+            cw = window.innerWidth,
+            ch = window.innerHeight,
+            particles = [], // 存储粒子  
+            hue = 20; // 基色调
+
+        // 设置高分辨率画布
+        canvas.width = cw;
+        canvas.height = ch;
+
+        // 生成[min, max]范围内的随机数
+        function random(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        // 粒子类
+        function Particle(x, y, size) {
+            this.x = x;
+            this.y = y;
+            this.angle = random(0, Math.PI * 2);
+            this.speed = random(1, size);
+            this.friction = 0.95;
+            this.gravity = 2;
+            this.hue = random(hue - 20, hue + 20);
+            this.brightness = random(50, 80);
+            this.alpha = 1;
+            this.decay = random(0.015, 0.03);
+            this.coordinateCount = 5;
+            this.coordinates = [];
+            this.width = 5; // 初始轨道宽度
+            this.maxWidth = 5; // 最大轨道宽度
+            this.minWidth = 0; // 最小轨道宽度
+
+            while (this.coordinateCount--) {
+                this.coordinates.push([this.x, this.y]);
+            }
+        }
+
+        // 绘制粒子
+        Particle.prototype.draw = function () {
+            ctx.beginPath();
+            ctx.moveTo(this.coordinates[this.coordinates.length - 1][0], this.coordinates[this.coordinates.length - 1][1]);
+            ctx.lineTo(this.x, this.y);
+            ctx.strokeStyle = 'hsla(' + this.hue + ',100%,' + this.brightness + '%,' + this.alpha + ')';
+            ctx.lineWidth = this.width; // 使用动态宽度
+            ctx.stroke();
+        }
+
+        // 更新粒子位置
+        Particle.prototype.update = function (index) {
+            this.coordinates.pop();
+            this.coordinates.unshift([this.x, this.y]);
+
+            this.speed *= this.friction;
+            this.x += Math.cos(this.angle) * this.speed;
+            this.y += Math.sin(this.angle) * this.speed + this.gravity;
+
+            this.alpha -= this.decay;
+            this.width = this.maxWidth * this.alpha; // 通过透明度调整轨道宽度
+            if (this.width < this.minWidth) {
+                this.width = this.minWidth; // 确保轨道宽度不会小于最小值
+            }
+
+            if (this.alpha <= this.decay) {
+                particles.splice(index, 1);
+            }
+        }
+
+        // 创建粒子
+        function createParticle(x, y, size) {
+            let particleCount = 20; // 调整粒子数量
+            while (particleCount--) {
+                particles.push(new Particle(x, y, size));
+            }
+        }
+
+        // 绽放烟花
+        function launchFirework() {
+            let x = random(0, cw);
+            let y = random(0, ch / 2); // 上半区
+            let size = random(5, 20); // 随机大小
+            createParticle(x, y, size);
+        }
+
+        // 在页面加载时随机绽放10朵烟花
+        function launchInitialFireworks() {
+            for (let i = 0; i < 10; i++) {
+                setTimeout(launchFirework, random(0, 800)); // 3秒内随机时间
+            }
+        }
+
+        // 主循环
+        function run() {
+            hue++;
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, cw, ch);
+            ctx.globalCompositeOperation = 'source-over';
+            var k = particles.length;
+            while (k--) {
+                particles[k].draw();
+                particles[k].update(k);
+            }
+        }
+
+        // 监听鼠标点击事件
+        canvas.addEventListener('mousedown', function (e) {
+            let mx = e.pageX - canvas.offsetLeft;
+            let my = e.pageY - canvas.offsetTop;
+            createParticle(mx, my, 10); // 默认大小
+        });
+
+        // 每33毫秒运行一次主循环
+        setInterval(run, 33);
+
+        // 页面加载时绽放初始烟花
+        window.onload = launchInitialFireworks;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const stemPart = document.querySelector('.stem');
+            const flowerParts = document.querySelectorAll('.flower-part');
+            const initialPositions = Array.from(flowerParts).map(part => ({
+                transform: window.getComputedStyle(part).transform,
+                opacity: window.getComputedStyle(part).opacity
+            }));
+
+            const randomTransforms = Array.from(flowerParts).map(() => ({
+                randomX: (Math.random() - 0.5) * 500,
+                randomY: (Math.random() - 0.5) * 500,
+                randomZ: (Math.random() - 0.5) * 500,
+                randomRotateX: (Math.random() - 0.5) * 360,
+                randomRotateY: Math.random() * 360,
+                randomRotateZ: (Math.random() - 0.5) * 360
+            }));
+
+            document.addEventListener('scroll', () => {
+                const scrollPosition = window.scrollY;
+                const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+                const scrollFactor = Math.min(scrollPosition / maxScroll, 1); // 0-1 when scroll position is 0 to maxScroll
+
+                flowerParts.forEach((part, index) => {
+                    const { randomX, randomY, randomZ, randomRotateX, randomRotateY, randomRotateZ } = randomTransforms[index];
+                    const translateX = randomX * (1 - scrollFactor);
+                    const translateY = randomY * (1 - scrollFactor);
+                    const translateZ = randomZ * (1 - scrollFactor);
+                    const rotateX = randomRotateX * (1 - scrollFactor);
+                    const rotateY = randomRotateY * (1 - scrollFactor);
+                    const rotateZ = randomRotateZ * (1 - scrollFactor);
+                    const opacity = scrollFactor;
+                    const scale = scrollFactor;
+
+                    part.style.transform = `translate3d(${translateX}px, ${translateY}px, ${translateZ}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg) scale(${scale})`;
+                    part.style.opacity = opacity;
+                });
+
+                const stemOpacity = scrollFactor;
+                stemPart.style.opacity = stemOpacity;
+            });
+        });
+    </script>
+</body>
+</html>
