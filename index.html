@@ -224,6 +224,9 @@
         // 页面加载时绽放初始烟花
         window.onload = launchInitialFireworks;
 
+        // 随机绽放烟花
+        setInterval(launchFirework, 500);
+
         document.addEventListener('DOMContentLoaded', () => {
             const stemPart = document.querySelector('.stem');
             const flowerParts = document.querySelectorAll('.flower-part');
